@@ -1,7 +1,3 @@
-#include <iostream>
-#include <utility>
-#include <array>
-
 #include "othello.h"
 
 std::ostream& operator<< (std::ostream& out, const Player& player) {
@@ -16,13 +12,25 @@ std::ostream& operator<< (std::ostream& out, const Player& player) {
 Othello::Othello() {
   std::array<int, 4> startingPieces{27, 36, 28, 35};
 
+  // quick lambda so we don't have to overload Othello::placePiece
+  auto setupPiece = [&](const Player& player, int posn) {
+    m_board[toRow(posn)][toCol(posn)] = player;
+  };
+
   m_whoseTurn = Player::black;
   m_numOpen = g_boardSize * g_boardSize - startingPieces.size();
+  m_whitePieces = (1Ui64 << startingPieces[0]) + (1Ui64 << startingPieces[1]);
+  m_blackPieces = (1Ui64 << startingPieces[2]) + (1Ui64 << startingPieces[3]);
 
-  placePiece(Player::white, startingPieces[0]);
-  placePiece(Player::white, startingPieces[1]);
-  placePiece(Player::black, startingPieces[2]);
-  placePiece(Player::black, startingPieces[3]);
+  setupPiece(Player::white, startingPieces[0]);
+  setupPiece(Player::white, startingPieces[1]);
+  setupPiece(Player::black, startingPieces[2]);
+  setupPiece(Player::black, startingPieces[3]);
+}
+
+void Othello::togglePlayer() {
+  if (m_whoseTurn == Player::black) m_whoseTurn = Player::white;
+  else if (m_whoseTurn == Player::white) m_whoseTurn = Player::black;
 }
 
 const std::pair<int, int> Othello::getTotalPieces() const {
@@ -39,8 +47,25 @@ const std::pair<int, int> Othello::getTotalPieces() const {
   return counts;
 }
 
-void Othello::placePiece(Player player, int pos) {
+void Othello::placePiece(const Player& player, int row, int col) {
+  m_board[row][col] = player;
+  int pieceBit = toPosn(row, col);
+  if (player == Player::black)
+    m_blackPieces.set(pieceBit);
+  else 
+    m_whitePieces.set(pieceBit);
+}
 
+void Othello::flipPiece(const Player& player, int row, int col) {
+  m_board[row][col] = player;
+  int pieceBit = toPosn(row, col);
+  if (player == Player::black) {
+    m_blackPieces.set(pieceBit);
+    m_whitePieces.reset(pieceBit);
+  } else {
+    m_whitePieces.set(pieceBit);
+    m_blackPieces.reset(pieceBit);
+  }
 }
 
 const Player& Othello::operator()(int row, int col) {
@@ -63,14 +88,8 @@ std::ostream& operator<< (std::ostream& out, const Othello& game) {
   out << "  black: " << game.m_blackPieces << "\n";
   // 
   std::pair<int, int> pieces = game.getTotalPieces();
-  out << "  num-whites: " << pieces.first 
-      << ", num-blacks: " << pieces.second << "\n";
+  out << "  num-white: " << pieces.first 
+      << ", num-black: " << pieces.second << "\n";
       
   return out;
-}
-
-int main() {
-  Othello o;
-  std::cout << o;
-  return 0;
 }
