@@ -32,13 +32,16 @@ class Othello {
     int m_numOpen;
   public:
     Othello();
+    const std::array<std::array<Player, g_boardSize>, g_boardSize>& getBoard() { return m_board; }
     const std::array<std::array<Player, g_boardSize>, g_boardSize> getBoard() const { return m_board; }
+    const Player& getWhoseTurn() { return m_whoseTurn; }
     const Player getWhoseTurn() const { return m_whoseTurn; }
     // swap w/b as current player
     void togglePlayer();
     const std::bitset<64>& getWhitePieces() { return m_whitePieces; }
     const std::bitset<64>& getBlackPieces() { return m_blackPieces; }
     // returns (w, b) sum of pieces on board
+    const std::pair<int, int> getTotalPieces();
     const std::pair<int, int> getTotalPieces() const;
     int getNumOpen() { return m_numOpen; }
     // place piece at board[row, col] and update player bit vector

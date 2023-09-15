@@ -16,13 +16,18 @@ constexpr std::array<std::pair<int, int>, 8> g_flipDirs{
 }; 
 
 // enum to keep track of the state of our legal move search
-enum class LegalMoveStatus
+enum class MoveCheckStatus
 {
   lookingForFlippable,
   foundFlippable,
+  doneChecking,
   illegal
 };
 
-bool isLegal(const Othello &game, int row, int col);
+// determine if a given row/col move is legal for the game
+bool isLegal(const Othello& game, int row, int col);
+// execute a move and returns the updated game
+// if the move is illegal - prints and error and returns the unchanged game
+const Othello& doMove(Othello& game, bool checkLegal, int row, int col);
 
 #endif

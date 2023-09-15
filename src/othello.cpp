@@ -33,12 +33,12 @@ void Othello::togglePlayer() {
   else if (m_whoseTurn == Player::white) m_whoseTurn = Player::black;
 }
 
-const std::pair<int, int> Othello::getTotalPieces() const {
+static std::pair<int, int> countTotal(const std::array<std::array<Player, g_boardSize>, g_boardSize>& board) {
   std::pair<int, int> counts{0, 0};
 
   for (int r = 0; r < g_boardSize; r++) {
     for (int c = 0; c < g_boardSize; c++) {
-      Player p = m_board[r][c];
+      Player p = board[r][c];
 
       if (p == Player::white) counts.first++;
       else if (p == Player::black) counts.second++;
@@ -47,8 +47,17 @@ const std::pair<int, int> Othello::getTotalPieces() const {
   return counts;
 }
 
+const std::pair<int, int> Othello::getTotalPieces() {
+  return countTotal(m_board);
+}
+
+const std::pair<int, int> Othello::getTotalPieces() const {
+  return countTotal(m_board);
+}
+
 void Othello::placePiece(const Player& player, int row, int col) {
   m_board[row][col] = player;
+  m_numOpen--;
   int pieceBit = toPosn(row, col);
   if (player == Player::black)
     m_blackPieces.set(pieceBit);
