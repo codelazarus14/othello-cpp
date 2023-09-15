@@ -1,10 +1,10 @@
 #include <cassert>
-#include <vector>
 #include "othello-rules.h"
 
-bool isLegal(const Othello& game, int row, int col) {
+// helper to determine if a given row/col move is legal for the game
+static bool isLegal(const Othello& game, int row, int col) {
   // don't call this function with the "pass" move!
-  assert(!isPass(std::pair<int, int>(row, col)));
+  assert(!isPass({row, col}));
 
   MoveCheckStatus status;
   Player player = game.getWhoseTurn();
@@ -60,7 +60,7 @@ const Othello& doMove(Othello& game, bool checkLegal, int row, int col) {
     return game;
   }
   // passes shouldn't modify the game except for whose turn it is
-  if (isPass(std::pair<int, int>{row, col})) {
+  if (isPass({row, col})) {
     game.togglePlayer();
     return game;
   }
@@ -104,7 +104,7 @@ const Othello& doMove(Othello& game, bool checkLegal, int row, int col) {
         }
         // found one of their pieces to flip - keep looking
         else {
-          flippable.push_back(std::pair<int, int>{r, c});
+          flippable.push_back({r, c});
           status = MoveCheckStatus::foundFlippable;
         }
       }
@@ -113,6 +113,52 @@ const Othello& doMove(Othello& game, bool checkLegal, int row, int col) {
   // after flipping pieces, toggle player and return
   game.togglePlayer();
   return game;
+}
+
+const std::vector<std::pair<int, int>> legalMoves(const Othello& game) {
+  std::vector<std::pair<int, int>> moves;
+  // check every space for legal moves...
+  for (int i = 0; i < g_boardSize; i++) {
+    for (int j = 0; j < g_boardSize; j++) {
+      if (isLegal(game, i, j)) {
+        moves.push_back({i, j});
+      }
+    }
+  }
+  // if no legal moves, must pass
+  if (!moves.size()) {
+    moves.push_back(g_movePass);
+  }
+  return moves;
+}
+
+// helper to determine if a function has any legal move and stops early - faster than waiting for legalMoves
+static bool hasLegalMove(const Othello& game) {
+  for (int i = 0; i < g_boardSize; i++) {
+    for (int j = 0; j < g_boardSize; j++) {
+      if (isLegal(game, i, j)) return true;
+    }
+  }
+  return false;
+}
+
+static bool mustPass(Othello& game, const Player& player) {
+  // if it's our turn, just check
+  if (player == game.getWhoseTurn())
+    return !hasLegalMove(game);
+  // if it's their turn, switch turns and check
+  else {
+    game.togglePlayer();
+    bool answer = !hasLegalMove(game);
+    game.togglePlayer();
+    return answer;
+  }
+}
+
+const bool isGameOver(Othello& game) {
+  // no more open spaces or both players have no legal moves
+  return game.getNumOpen() == 0
+    || (mustPass(game, Player::black) && mustPass(game, Player::white));
 }
 
 // helper for debugging
@@ -138,7 +184,7 @@ static std::string printBinary(const uint64_t& number) {
 int main() {
   Othello o;
 
-  std::cout << o;
+  // std::cout << o;
 
   // std::cout << o.getNumOpen() << "\n";
 
@@ -148,27 +194,45 @@ int main() {
 
   // std::cout << o;
 
-  std::pair<int, int> move{4,5};
-  std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
-  // std::cout << "  " << (isLegal(o, move.first, move.second) ? "Legal" :  "Illegal") << " move \n";
-  o = doMove(o, true, move.first, move.second);
+  // std::pair<int, int> move{4,5};
+  // std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
+  // // std::cout << "  " << (isLegal(o, move.first, move.second) ? "Legal" :  "Illegal") << " move \n";
+  // o = doMove(o, true, move.first, move.second);
 
-  std::cout << o;
+  // std::cout << o;
 
-  move = {5, 5};
-  std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
-  o = doMove(o, true, move.first, move.second);
+  // move = {5, 5};
+  // std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
+  // o = doMove(o, true, move.first, move.second);
 
-  std::cout << o;
+  // std::cout << o;
 
-  move = {4, 2};
-  std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
-  o = doMove(o, true, move.first, move.second);
-  move = {5, 4};
-  std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
-  o = doMove(o, true, move.first, move.second);
+  // move = {4, 2};
+  // std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
+  // o = doMove(o, true, move.first, move.second);
+  // move = {5, 4};
+  // std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
+  // o = doMove(o, true, move.first, move.second);
 
-  std::cout << o;
+  for (int i = 0; i < 10; i++) {
+    std::cout << o;
+    
+    std::vector<std::pair<int, int>> moves = legalMoves(o);
+    std::cout << "Legal moves:";
+    for (std::pair<int, int> move : moves) {
+      std::cout << " [" << move.first << ", " << move.second << "]";
+    }
+    std::cout << "\n";
+
+    int r = std::rand() % moves.size();
+    std::cout << "picking move " << r << "\n";
+    o = doMove(o, true, moves[r].first, moves[r].second);
+  }
+
+  // std::cout << (hasLegalMove(o) ? "True" : "False") << "\n";
+  // std::cout << (mustPass(o, Player::white) ? "True" : "False") << "\n";
+  // std::cout << (mustPass(o, Player::black) ? "True" : "False") << "\n";
+  std::cout << (isGameOver(o) ? "True" : "False") << "\n";
 
   return 0;
 }

@@ -1,6 +1,7 @@
 #ifndef OTHELLO_RULES_H
 #define OTHELLO_RULES_H
 
+#include <vector>
 #include "othello.h"
 
 // the 4 up/down + 4 diagonal directions pieces can be flipped in
@@ -24,10 +25,14 @@ enum class MoveCheckStatus
   illegal
 };
 
-// determine if a given row/col move is legal for the game
-bool isLegal(const Othello& game, int row, int col);
 // execute a move and returns the updated game
-// if the move is illegal - prints and error and returns the unchanged game
+// if the move is illegal - prints an error and returns the unchanged game
 const Othello& doMove(Othello& game, bool checkLegal, int row, int col);
+// returns a list of the legal moves for the current game state
+const std::vector<std::pair<int, int>> legalMoves(const Othello& game);
+// game isn't a const reference bc another function toggles the current turn twice to see if neither side can make a move
+const bool isGameOver(Othello& game);
+// does random moves until the game is over
+const Othello& defaultPolicy(Othello& game);
 
 #endif
