@@ -52,8 +52,12 @@ class Othello {
     const Player& operator()(int row, int col);
     friend std::ostream& operator<<(std::ostream& out, const Othello& game);
 
-    uint64_t getHashKey() {
-      return m_whitePieces.to_ullong() + m_blackPieces.to_ullong() + static_cast<unsigned long long>(m_whoseTurn);
+    size_t getHashKey() {
+      size_t hashW = std::hash<std::bitset<64>>{}(m_whitePieces);
+      size_t hashB = std::hash<std::bitset<64>>{}(m_blackPieces);
+      size_t hashTurn = std::hash<int>{}(static_cast<int>(m_whoseTurn));
+      // could have used boost::combine idk
+      return hashW ^ (hashB << 1) ^ (hashTurn << 2);
     }
 };
 
