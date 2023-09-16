@@ -33,6 +33,7 @@ const std::vector<std::pair<int, int>> legalMoves(const Othello& game);
 // game isn't a const reference bc another function toggles the current turn twice to see if neither side can make a move
 const bool isGameOver(Othello& game);
 // does random moves until the game is over
-const Othello& defaultPolicy(Othello& game);
+// and returns a score value = + for B win, - for W win
+const float defaultPolicy(Othello& game);
 
 #endif

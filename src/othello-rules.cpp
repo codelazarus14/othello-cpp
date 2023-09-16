@@ -1,4 +1,5 @@
 #include <cassert>
+#include <random>
 #include "othello-rules.h"
 
 // helper to determine if a given row/col move is legal for the game
@@ -161,6 +162,41 @@ const bool isGameOver(Othello& game) {
     || (mustPass(game, Player::black) && mustPass(game, Player::white));
 }
 
+static std::pair<int, int> randomMove(const Othello& game) {
+  std::vector<std::pair<int, int>> moves = legalMoves(game);
+
+	std::random_device rd;	// a seed source for the random number engine
+	std::mt19937 gen(rd());	// mersenne_twister_engine seeded with rd()
+	std::uniform_int_distribution<> distrib(0, moves.size() - 1);
+
+  return moves[distrib(gen)];
+}
+
+// helper used by defaultPolicy
+static const Othello& doRandomMove(Othello& game) {
+  // pick a random move and do it
+  std::pair<int, int> randMove = randomMove(game);
+  return doMove(game, false, randMove.first, randMove.second);
+}
+
+const float defaultPolicy(Othello& game) {
+  while (!isGameOver(game)) {
+    game = doRandomMove(game);
+  }
+
+  // compute score from pieces
+  std::pair<int, int> counts = game.getTotalPieces();
+  int white = counts.first;
+  int black = counts.second;
+  int diff = black - white;
+  // W win = negative value
+  if (diff < 0) return 0 - sqrt(abs(diff));
+  // B win = positive value
+  else if (diff > 0) return sqrt(diff);
+  // tie (pieces equal) = 0
+  else return 0;
+}
+
 // helper for debugging
 static std::string printBinary(const uint64_t& number) {
   int counter = 0;
@@ -214,25 +250,31 @@ int main() {
   // std::cout << "Trying move: " << move.first << ", " << move.second << "...\n";
   // o = doMove(o, true, move.first, move.second);
 
-  for (int i = 0; i < 10; i++) {
-    std::cout << o;
+  // for (int i = 0; i < 10; i++) {
+  //   std::cout << o;
     
-    std::vector<std::pair<int, int>> moves = legalMoves(o);
-    std::cout << "Legal moves:";
-    for (std::pair<int, int> move : moves) {
-      std::cout << " [" << move.first << ", " << move.second << "]";
-    }
-    std::cout << "\n";
+  //   std::vector<std::pair<int, int>> moves = legalMoves(o);
+  //   std::cout << "Legal moves:";
+  //   for (std::pair<int, int> move : moves) {
+  //     std::cout << " [" << move.first << ", " << move.second << "]";
+  //   }
+  //   std::cout << "\n";
 
-    int r = std::rand() % moves.size();
-    std::cout << "picking move " << r << "\n";
-    o = doMove(o, true, moves[r].first, moves[r].second);
-  }
+  //   int r = std::rand() % moves.size();
+  //   std::cout << "picking move " << r << "\n";
+  //   o = doMove(o, true, moves[r].first, moves[r].second);
+  // }
 
   // std::cout << (hasLegalMove(o) ? "True" : "False") << "\n";
   // std::cout << (mustPass(o, Player::white) ? "True" : "False") << "\n";
   // std::cout << (mustPass(o, Player::black) ? "True" : "False") << "\n";
-  std::cout << (isGameOver(o) ? "True" : "False") << "\n";
+  // std::cout << (isGameOver(o) ? "True" : "False") << "\n";
+
+  float outcome = defaultPolicy(o);
+
+  std::cout << "\nOutcome: " << outcome << "\n";
+
+  std::cout << o;
 
   return 0;
 }
