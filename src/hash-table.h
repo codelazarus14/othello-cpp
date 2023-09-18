@@ -12,7 +12,6 @@ template <typename T>
 class HashTable {
   private:
     std::vector<std::vector<std::pair<int, T>>> m_table;
-    int hash(int key) { return key % g_tableCapacity; }
   public:
     HashTable() { m_table.resize(g_tableCapacity); }
     // call before getItem() to avoid an exception or just to check
@@ -43,6 +42,8 @@ class HashTable {
 };
 
 // due to how the compiler instantiates template classes while compiling individual files, the old hash-table.cpp was removed so that all the definitions in it can be exposed to any other file using these functions directly (so we might as well copy the definitions in here...)
+
+static int hash(int key) { return key % g_tableCapacity; }
 
 template <typename T>
 bool HashTable<T>::contains(int key) {

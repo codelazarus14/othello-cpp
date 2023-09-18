@@ -102,3 +102,19 @@ std::ostream& operator<< (std::ostream& out, const Othello& game) {
       
   return out;
 }
+
+static size_t computeHash(std::bitset<64> white, std::bitset<64> black, Player whoseTurn) {
+  size_t hashW = std::hash<std::bitset<64>>{}(white);
+  size_t hashB = std::hash<std::bitset<64>>{}(black);
+  size_t hashTurn = std::hash<int>{}(static_cast<int>(whoseTurn));
+  // could have used boost::combine idk
+  return hashW ^ (hashB << 1) ^ (hashTurn << 2);
+}
+
+size_t Othello::getHashKey() {
+  return computeHash(m_whitePieces, m_blackPieces, m_whoseTurn);
+}
+
+size_t Othello::getHashKey() const {
+  return computeHash(m_whitePieces, m_blackPieces, m_whoseTurn);
+}
