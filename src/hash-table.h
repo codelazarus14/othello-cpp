@@ -11,9 +11,10 @@ constexpr int g_tableCapacity = 10000;
 template <typename T>
 class HashTable {
   private:
-    std::array<std::vector<std::pair<int, T>>, g_tableCapacity> m_table;
+    std::vector<std::vector<std::pair<int, T>>> m_table;
     int hash(int key) { return key % g_tableCapacity; }
   public:
+    HashTable() { m_table.resize(g_tableCapacity); }
     // call before getItem() to avoid an exception or just to check
     bool contains(int key);
     // throws std::invalid_argument exception if the item is not found
