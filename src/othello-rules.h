@@ -31,9 +31,9 @@ const Othello& doMove(Othello& game, bool checkLegal, int row, int col);
 // returns a list of the legal moves for the current game state
 const std::vector<std::pair<int, int>> legalMoves(const Othello& game);
 // game isn't a const reference bc another function toggles the current turn twice to see if neither side can make a move
-const bool isGameOver(Othello& game);
+bool isGameOver(Othello& game);
 // does random moves until the game is over
 // and returns a score value = + for B win, - for W win
-const float defaultPolicy(Othello& game);
+float defaultPolicy(Othello& game);
 
 #endif

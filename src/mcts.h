@@ -1,9 +1,13 @@
 #ifndef MCTS_H
 #define MCTS_H
 
+#include <limits>
 #include "othello.h"
 #include "othello-rules.h"
 #include "hash-table.h"
+
+constexpr float g_posInfinity = std::numeric_limits<float>::max();
+constexpr float g_posInfinityInverse = 1 / g_posInfinity;
 
 struct MCNode {
   size_t key;
@@ -14,6 +18,8 @@ struct MCNode {
   std::vector<float> moveScores;
 };
 
+std::ostream& operator<<(std::ostream& out, const MCNode& node);
+
 class MCTree {
   private:
     HashTable<MCNode> hashy{};
@@ -23,7 +29,7 @@ class MCTree {
     MCTree(const Othello& game) : rootKey(game.getHashKey()) {}
     const MCNode& getRootNode() { return hashy.get(rootKey); }
     // creates a new node and inserts it into the tree
-    const MCNode& insertNode(const Othello& game, size_t key);
+    const MCNode insertNode(const Othello& game, size_t key);
 };
 
 // selects an index into the node's moves vector

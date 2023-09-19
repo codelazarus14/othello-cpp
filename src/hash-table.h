@@ -11,15 +11,15 @@ constexpr int g_tableCapacity = 10000;
 template <typename T>
 class HashTable {
   private:
-    std::vector<std::vector<std::pair<int, T>>> m_table;
+    std::vector<std::vector<std::pair<size_t, T>>> m_table;
   public:
     HashTable() { m_table.resize(g_tableCapacity); }
     // call before getItem() to avoid an exception or just to check
-    bool contains(int key);
+    bool contains(size_t key);
     // throws std::invalid_argument exception if the item is not found
-    const T& get(int key);
-    void insert(int key, const T& value);
-    void remove(int key);
+    const T& get(size_t key);
+    void insert(size_t key, const T& value);
+    void remove(size_t key);
     // have to inline this because it doesn't like template classes
     friend std::ostream& operator<<(std::ostream& out, const HashTable& table) {
       out << "Hash Table:\n-------------------\n";
@@ -43,10 +43,10 @@ class HashTable {
 
 // due to how the compiler instantiates template classes while compiling individual files, the old hash-table.cpp was removed so that all the definitions in it can be exposed to any other file using these functions directly (so we might as well copy the definitions in here...)
 
-static int hash(int key) { return key % g_tableCapacity; }
+static size_t hash(size_t key) { return key % g_tableCapacity; }
 
 template <typename T>
-bool HashTable<T>::contains(int key) {
+bool HashTable<T>::contains(size_t key) {
   int bucket = hash(key);
   if (bucket < 0 || bucket >= g_tableCapacity)
     return false;
@@ -59,7 +59,7 @@ bool HashTable<T>::contains(int key) {
 }
 
 template <typename T>
-const T& HashTable<T>::get(int key) {
+const T& HashTable<T>::get(size_t key) {
   int bucket = hash(key);
   
   for (int i = 0; i < m_table[bucket].size(); i++) {
@@ -73,13 +73,13 @@ const T& HashTable<T>::get(int key) {
 }
 
 template <typename T>
-void HashTable<T>::insert(int key, const T& value) {
+void HashTable<T>::insert(size_t key, const T& value) {
   int index = hash(key);
   m_table[index].push_back({key, value});
 }
 
 template <typename T>
-void HashTable<T>::remove(int key) {
+void HashTable<T>::remove(size_t key) {
   int index = hash(key);
 
   std::vector<std::pair<int, T>>::iterator itr;

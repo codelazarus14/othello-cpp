@@ -8,8 +8,8 @@ static bool isLegal(const Othello& game, int row, int col) {
   assert(!isPass({row, col}));
 
   MoveCheckStatus status;
-  Player player = game.getWhoseTurn();
-  std::array<std::array<Player, g_boardSize>, g_boardSize> board = game.getBoard();
+  const Player& player = game.getWhoseTurn();
+  const std::array<std::array<Player, g_boardSize>, g_boardSize>& board = game.getBoard();
   // picking an occupied position = always illegal
   if (board[row][col] != Player::none) return false;
 
@@ -31,7 +31,7 @@ static bool isLegal(const Othello& game, int row, int col) {
         status = MoveCheckStatus::illegal;
       } else {
         // get piece at current position
-        Player currPiece = board[r][c];
+        const Player& currPiece = board[r][c];
         // if we found a blank, or one of our own pieces before finding
         // one of the opponent's = illegal
         if (currPiece == Player::none || (status == MoveCheckStatus::lookingForFlippable && currPiece == player)) {
@@ -67,8 +67,8 @@ const Othello& doMove(Othello& game, bool checkLegal, int row, int col) {
   }
 
   MoveCheckStatus status;
-  Player player = game.getWhoseTurn();
-  std::array<std::array<Player, g_boardSize>, g_boardSize> board = game.getBoard();
+  const Player& player = game.getWhoseTurn();
+  const std::array<std::array<Player, g_boardSize>, g_boardSize>& board = game.getBoard();
 
   // place piece on the board
   game.placePiece(player, row, col);
@@ -91,7 +91,7 @@ const Othello& doMove(Othello& game, bool checkLegal, int row, int col) {
       if (!inBounds(r, c)) {
         status = MoveCheckStatus::doneChecking;
       } else {
-        Player currPiece = board[r][c];
+        const Player& currPiece = board[r][c];
         // blank/found one of ours before theirs - stop looking in this dir
         if (currPiece == Player::none || (status == MoveCheckStatus::lookingForFlippable && currPiece == player)) {
           status = MoveCheckStatus::doneChecking;
@@ -156,7 +156,7 @@ static bool mustPass(Othello& game, const Player& player) {
   }
 }
 
-const bool isGameOver(Othello& game) {
+bool isGameOver(Othello& game) {
   // no more open spaces or both players have no legal moves
   return game.getNumOpen() == 0
     || (mustPass(game, Player::black) && mustPass(game, Player::white));
@@ -179,7 +179,7 @@ static const Othello& doRandomMove(Othello& game) {
   return doMove(game, false, randMove.first, randMove.second);
 }
 
-const float defaultPolicy(Othello& game) {
+float defaultPolicy(Othello& game) {
   while (!isGameOver(game)) {
     game = doRandomMove(game);
   }
