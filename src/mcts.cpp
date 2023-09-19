@@ -8,7 +8,7 @@ const MCNode MCTree::insertNode(const Othello& game, size_t key) {
   MCNode newNode{ key, game.getWhoseTurn(), 0, moves };
   newNode.moveVisits.resize(moves.size());
   newNode.moveScores.resize(moves.size());
-  hashy.insert(key, newNode);
+  m_hashy.insert(key, newNode);
   return newNode;
 }
 
@@ -26,8 +26,7 @@ std::ostream& operator<<(std::ostream& out, const MCNode& node) {
 
 int selectMove(const MCNode& node, float c) {
   const Player& player = node.whoseTurn;
-  const std::vector<std::pair<int, int>> moves = node.moves;
-  int numMoves = moves.size();
+  int numMoves = node.moves.size();
 
   if (!numMoves) {
     std::ostringstream err;
@@ -37,8 +36,8 @@ int selectMove(const MCNode& node, float c) {
     // return index of first (and only) move
     return 0;
   } else {
-    float bestScore;
-    int bestIndex;
+    float bestScore = node.moveScores[0];
+    int bestIndex = 0;
     
     for (int i = 0; i < numMoves; i++) {
       float qValue = node.moveScores[i];
@@ -98,6 +97,68 @@ std::vector<std::pair<size_t, int>> simTree(Othello& game, MCTree& tree, float c
   return kmAcc;
 }
 
+void backUp(HashTable<MCNode>& hashy, std::vector<std::pair<size_t, int>> kmAcc, float result) {
+  for (std::pair<size_t, int> keyMove : kmAcc) {
+    size_t key = keyMove.first;
+    int move = keyMove.second;
+
+    try {
+      // TODO: because i'm an idiot we can't edit the node's contents directly (.second of the KV pair)
+      MCNode node{hashy.get(key)};
+
+      // update stats on each node from each key/move pair
+      node.numVisits++;
+      node.moveVisits[move]++;
+      node.moveScores[move] += 
+        (result - node.moveScores[move]) / node.moveVisits[move];
+      // wipe the old node, then add the new one
+      hashy.remove(key);
+      hashy.insert(key, node);
+    }
+      // shouldn't except if this key was either already in the table or added in the last iteration of simTree()
+    catch (std::invalid_argument err) {
+      std::cout << err.what() << "\n";
+      std::cout << "This really shouldn't be happening in backUp!! Check kmAcc or something.";
+    }
+  }
+}
+
+std::pair<int, int> uctSearch(const Othello& origGame, int numSims, float c, bool verbose) {
+  std::cout << "==========================\n";
+  std::cout << "        UCT Search\n";
+  std::cout << "==========================\n";
+  
+  MCTree tree{origGame};
+
+  for (int i = 0; i < numSims; i++) {
+    // clone the game and do a bunch of simulations
+    Othello copy{origGame};
+    std::vector<std::pair<size_t, int>> keyMoveAcc{simTree(copy, tree, c)};
+    float result = simDefault(copy);
+
+    backUp(tree.getHashTable(), keyMoveAcc, result);
+  }
+    
+  // afterwards, find best move and print results
+  MCNode root = tree.getRootNode();
+  // c=0: don't explore - just pick the best one
+  int bestMove = selectMove(root, 0); 
+  float bestScore = root.moveScores[bestMove];
+
+  if (verbose) {
+    std::cout << "Best score: " << bestScore;
+    std::cout << ", scores: ";
+    for (float score : root.moveScores)
+      std::cout << score << ", ";
+    std::cout << "\nVisits: ";
+    for (int visits : root.moveVisits) 
+      std::cout << visits << " ";
+    std::cout << "\n";
+  }
+
+  return root.moves[bestMove];
+}
+
 // pit two players against each other with different UCT search args
 // verbose = whether or not to print out the entire game as it progresses
 static void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool verbose = false) {
@@ -106,9 +167,8 @@ static void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool
 
 int main() {
   Othello o;
-  std::vector<std::pair<size_t, int>> kmAcc = simTree(o, MCTree{o}, 2.0f);
+  float c = 2.0f;
 
-  for (std::pair<size_t, int> keyMove : kmAcc) {
-    std::cout << keyMove.first << ", " << keyMove.second << "\n";
-  }
+  std::pair<int, int> bestMove{uctSearch(o, 1000, c, true)};
+  std::cout << bestMove.first << ", " << bestMove.second << "\n";
 }

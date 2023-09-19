@@ -25,14 +25,14 @@ class HashTable {
       out << "Hash Table:\n-------------------\n";
       for (int i = 0; i < g_tableCapacity; i++)
       {
-        std::vector<std::pair<int, T>> bucket = table.m_table[i];
+        std::vector<std::pair<size_t, T>> bucket = table.m_table[i];
         if (bucket.empty()) continue;
         
         out << "Index: " << i << "\n";
-        std::vector<std::pair<int, T>>::iterator itr;
+        std::vector<std::pair<size_t, T>>::iterator itr;
         for (itr = bucket.begin(); itr != bucket.end(); itr++)
         {
-          std::pair<int, T> item = *itr;
+          std::pair<size_t, T> item = *itr;
           out << "  Key: " << item.first << "\n";
         }
       }
@@ -82,7 +82,7 @@ template <typename T>
 void HashTable<T>::remove(size_t key) {
   int index = hash(key);
 
-  std::vector<std::pair<int, T>>::iterator itr;
+  std::vector<std::pair<size_t, T>>::iterator itr;
   for (itr = m_table[index].begin(); itr != m_table[index].end(); itr++) {
     if ((*itr).first == key) {
       m_table[index].erase(itr);

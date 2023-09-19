@@ -1,12 +1,11 @@
 #ifndef MCTS_H
 #define MCTS_H
 
-#include <limits>
 #include "othello.h"
 #include "othello-rules.h"
 #include "hash-table.h"
 
-constexpr float g_posInfinity = std::numeric_limits<float>::max();
+constexpr float g_posInfinity = 10000000;
 constexpr float g_posInfinityInverse = 1 / g_posInfinity;
 
 struct MCNode {
@@ -22,19 +21,19 @@ std::ostream& operator<<(std::ostream& out, const MCNode& node);
 
 class MCTree {
   private:
-    HashTable<MCNode> hashy{};
-    size_t rootKey;
+    HashTable<MCNode> m_hashy{};
+    size_t m_rootKey;
   public:
     // tree root state derived from game
-    MCTree(const Othello& game) : rootKey(game.getHashKey()) {}
-    HashTable<MCNode>& getHashTable() { return hashy; }
-    const MCNode& getRootNode() { return hashy.get(rootKey); }
+    MCTree(const Othello& game) : m_rootKey(game.getHashKey()) {}
+    HashTable<MCNode>& getHashTable() { return m_hashy; }
+    const MCNode& getRootNode() { return m_hashy.get(m_rootKey); }
     // creates a new node and inserts it into the tree
     const MCNode insertNode(const Othello& game, size_t key);
 };
 
-// selects an index into the node's moves vector
-// throws a std::out_of_range exception if there are none
+// selects an index into the node's moves vector, weighing explored high-scoring actions against unexplored ones as determined by c (the exploitation-exploration constant)
+// throws a std::out_of_range exception if there are no moves
 int selectMove(const MCNode& node, float c);
 // explores a path from the root node down to a yet-unexplored node and returns a list of (state, move) pairs
 // state = a key into the tree's hash table of nodes
