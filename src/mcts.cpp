@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "mcts.h"
 
 const MCNode MCTree::insertNode(const Othello& game, size_t key) {
@@ -23,7 +24,7 @@ std::ostream& operator<<(std::ostream& out, const MCNode& node) {
   return out;
 }
 
-const int selectMove(const MCNode& node, float c) {
+int selectMove(const MCNode& node, float c) {
   const Player& player = node.whoseTurn;
   const std::vector<std::pair<int, int>> moves = node.moves;
   int numMoves = moves.size();
@@ -64,6 +65,39 @@ const int selectMove(const MCNode& node, float c) {
   }
 }
 
+std::vector<std::pair<size_t, int>> simTree(Othello& game, MCTree& tree, float c) {
+  std::vector<std::pair<size_t, int>> kmAcc;
+
+  // select a move, do it and update the game/accumulator
+  auto pickMoveAndPush = [&](Othello& game, const MCNode& node, size_t key) {
+      int moveIdx = selectMove(node, c);
+
+      game = doMove(game, false, node.moves[moveIdx].first, node.moves[moveIdx].second);
+      kmAcc.push_back({key, moveIdx});
+  };
+
+  while (!isGameOver(game)) {
+    size_t key = game.getHashKey();
+    MCNode node;
+    // if key is already in tree, pick a new move
+    try {
+      node = tree.getHashTable().get(key);
+      pickMoveAndPush(game, node, key);
+    }
+    // if we haven't seen it before, add node and stop the simulation
+    catch (std::invalid_argument) {
+      node = tree.insertNode(game, key);
+      // pick a final move to do before returning
+      pickMoveAndPush(game, node, key);
+      break;
+    }
+  }
+  
+  // backUp will start from the final node added to the tree
+  std::reverse(kmAcc.begin(), kmAcc.end());
+  return kmAcc;
+}
+
 // pit two players against each other with different UCT search args
 // verbose = whether or not to print out the entire game as it progresses
 static void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool verbose = false) {
@@ -72,15 +106,9 @@ static void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool
 
 int main() {
   Othello o;
-  MCTree tree{o};
+  std::vector<std::pair<size_t, int>> kmAcc = simTree(o, MCTree{o}, 2.0f);
 
-  for (int i = 0; i < 5; i++) {
-    std::cout << "Move " << i << "\n";
-    MCNode node = tree.insertNode(o, o.getHashKey());
-    std::cout << node;
-    int bestMove = selectMove(node, 2.0f);
-    std::cout << bestMove;
-    doMove(o, false, node.moves[bestMove].first, node.moves[bestMove].second);
-    std::cout << o;
+  for (std::pair<size_t, int> keyMove : kmAcc) {
+    std::cout << keyMove.first << ", " << keyMove.second << "\n";
   }
 }
