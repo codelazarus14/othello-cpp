@@ -44,6 +44,10 @@ float simDefault(Othello& game) { return defaultPolicy(game); }
 // update the relevant nodes in the hash table with a list of (key, move) accumulated pairs from a simulation run and the final score
 void backUp(HashTable<MCNode>& hashy, std::vector<std::pair<size_t, int>> kmAcc, float result);
 // uses the MCTS algorithm with the given parameters to estimate the best possible move for the current game state
-std::pair<int, int> uctSearch(const Othello& origGame, int numSims, float C, bool verbose = false);
+std::pair<int, int> uctSearch(const Othello& origGame, int numSims, float C, bool verbose);
+
+// pit two players against each other with different UCT search args
+// verbose = whether or not to print out the entire game as it progresses
+void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool verbose);
 
 #endif

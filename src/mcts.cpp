@@ -148,8 +148,9 @@ std::pair<int, int> uctSearch(const Othello& origGame, int numSims, float c, boo
   if (verbose) {
     std::cout << "Best score: " << bestScore;
     std::cout << ", scores: ";
-    for (float score : root.moveScores)
-      std::cout << score << ", ";
+    for (int i = 0; i < root.moveScores.size() - 1; i++)
+      std::cout << root.moveScores[i] << ", ";
+    std::cout << root.moveScores[root.moveScores.size() - 1];
     std::cout << "\nVisits: ";
     for (int visits : root.moveVisits) 
       std::cout << visits << " ";
@@ -159,16 +160,38 @@ std::pair<int, int> uctSearch(const Othello& origGame, int numSims, float c, boo
   return root.moves[bestMove];
 }
 
-// pit two players against each other with different UCT search args
-// verbose = whether or not to print out the entire game as it progresses
-static void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool verbose = false) {
+void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool verbose) {
   Othello game;
+
+  while (!isGameOver(game)) {
+    std::pair<int, int> move;
+    if (game.getWhoseTurn() == Player::black) {
+      std::cout << "\nBLACK'S TURN!\n";
+      move = uctSearch(game, blackSims, blackC, verbose);
+    } else {
+      std::cout << "\nWHITE'S TURN!\n";
+      move = uctSearch(game, whiteSims, whiteC, verbose);
+    }
+    doMove(game, false, move.first, move.second);
+    if (verbose) 
+      std::cout << game;
+  }
+
+  // print final game board for non-verbose
+  if (!verbose) {
+    std::cout << "\n==========RESULT==========\n";
+    std::cout << game;
+  }
+  std::pair<int, int> counts = game.getTotalPieces();
+  if (counts.first - counts.second > 0) {
+    std::cout << "\nWhite wins!\n";
+  } else if (counts.first - counts.second < 0) {
+    std::cout << "\nBlack wins!\n";
+  } else {
+    std::cout << "\nTie!\n";
+  }
 }
 
 int main() {
-  Othello o;
-  float c = 2.0f;
-
-  std::pair<int, int> bestMove{uctSearch(o, 1000, c, true)};
-  std::cout << bestMove.first << ", " << bestMove.second << "\n";
+  compete(1000, 2, 1000, 2, true);
 }
