@@ -2,7 +2,7 @@
 #include "mcts.h"
 
 const MCNode MCTree::insertNode(const Othello& game, size_t key) {
-  std::vector<std::pair<int, int>> moves = legalMoves(game);
+  std::vector<std::pair<int, int>> moves{legalMoves(game)};
   // init key, whoseTurn, numVisits, moves vector
   // and manually resize other two vectors to match
   MCNode newNode{ key, game.getWhoseTurn(), 0, moves };
@@ -77,17 +77,14 @@ std::vector<std::pair<size_t, int>> simTree(Othello& game, MCTree& tree, float c
 
   while (!isGameOver(game)) {
     size_t key = game.getHashKey();
-    MCNode node;
     // if key is already in tree, pick a new move
     try {
-      node = tree.getHashTable().get(key);
-      pickMoveAndPush(game, node, key);
+      pickMoveAndPush(game, tree.getHashTable().get(key), key);
     }
     // if we haven't seen it before, add node and stop the simulation
     catch (std::invalid_argument) {
-      node = tree.insertNode(game, key);
       // pick a final move to do before returning
-      pickMoveAndPush(game, node, key);
+      pickMoveAndPush(game, tree.insertNode(game, key), key);
       break;
     }
   }
@@ -103,7 +100,7 @@ void backUp(HashTable<MCNode>& hashy, std::vector<std::pair<size_t, int>> kmAcc,
     int move = keyMove.second;
 
     try {
-      MCNode& node = hashy.get(key);
+      MCNode& node{hashy.get(key)};
 
       // update stats on each node from each key/move pair
       node.numVisits++;
@@ -136,7 +133,7 @@ std::pair<int, int> uctSearch(const Othello& origGame, int numSims, float c, boo
   }
     
   // afterwards, find best move and print results
-  MCNode root = tree.getRootNode();
+  MCNode root{tree.getRootNode()};
   // c=0: don't explore - just pick the best one
   int bestMove = selectMove(root, 0); 
   float bestScore = root.moveScores[bestMove];
@@ -178,7 +175,7 @@ void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool verbos
     std::cout << "\n==========RESULT==========\n";
     std::cout << game;
   }
-  std::pair<int, int> counts = game.getTotalPieces();
+  std::pair<int, int> counts{game.getTotalPieces()};
   if (counts.first - counts.second > 0) {
     std::cout << "\nWhite wins!\n";
   } else if (counts.first - counts.second < 0) {

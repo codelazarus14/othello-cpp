@@ -38,7 +38,7 @@ static std::pair<int, int> countTotal(const std::array<std::array<Player, g_boar
 
   for (int r = 0; r < g_boardSize; r++) {
     for (int c = 0; c < g_boardSize; c++) {
-      Player p = board[r][c];
+      const Player& p = board[r][c];
 
       if (p == Player::white) counts.first++;
       else if (p == Player::black) counts.second++;
@@ -96,7 +96,7 @@ std::ostream& operator<< (std::ostream& out, const Othello& game) {
   out << "  white: " << game.m_whitePieces << "\n";
   out << "  black: " << game.m_blackPieces << "\n";
   // 
-  std::pair<int, int> pieces = game.getTotalPieces();
+  std::pair<int, int> pieces{game.getTotalPieces()};
   out << "  num-white: " << pieces.first 
       << ", num-black: " << pieces.second << "\n";
       

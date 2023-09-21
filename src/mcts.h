@@ -6,8 +6,8 @@
 #include "hash-table.h"
 
 // for weighting unexplored nodes/moves without overflow
-constexpr float g_posInfinity = 10000000;
-constexpr float g_posInfinityInverse = 1 / g_posInfinity;
+constexpr float g_posInfinity{10000000};
+constexpr float g_posInfinityInverse{1 / g_posInfinity};
 
 struct MCNode {
   size_t key;

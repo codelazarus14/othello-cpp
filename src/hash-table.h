@@ -6,7 +6,7 @@
 #include <vector>
 #include <sstream>
 
-constexpr int g_tableCapacity = 10000;
+constexpr int g_tableCapacity{10000};
 
 template <typename T>
 class HashTable {
@@ -25,14 +25,14 @@ class HashTable {
       out << "Hash Table:\n-------------------\n";
       for (int i = 0; i < g_tableCapacity; i++)
       {
-        std::vector<std::pair<size_t, T>> bucket = table.m_table[i];
+        std::vector<std::pair<size_t, T>> bucket{table.m_table[i]};
         if (bucket.empty()) continue;
         
         out << "Index: " << i << "\n";
         std::vector<std::pair<size_t, T>>::iterator itr;
         for (itr = bucket.begin(); itr != bucket.end(); itr++)
         {
-          std::pair<size_t, T> item = *itr;
+          std::pair<size_t, T> item{*itr};
           out << "  Key: " << item.first << "\n";
         }
       }

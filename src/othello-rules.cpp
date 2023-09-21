@@ -163,7 +163,7 @@ bool isGameOver(Othello& game) {
 }
 
 static std::pair<int, int> randomMove(const Othello& game) {
-  std::vector<std::pair<int, int>> moves = legalMoves(game);
+  std::vector<std::pair<int, int>> moves{legalMoves(game)};
 
 	std::random_device rd;	// a seed source for the random number engine
 	std::mt19937 gen(rd());	// mersenne_twister_engine seeded with rd()
@@ -175,7 +175,7 @@ static std::pair<int, int> randomMove(const Othello& game) {
 // helper used by defaultPolicy
 static const Othello& doRandomMove(Othello& game) {
   // pick a random move and do it
-  std::pair<int, int> randMove = randomMove(game);
+  std::pair<int, int> randMove{randomMove(game)};
   return doMove(game, false, randMove.first, randMove.second);
 }
 
@@ -185,7 +185,7 @@ float defaultPolicy(Othello& game) {
   }
 
   // compute score from pieces
-  std::pair<int, int> counts = game.getTotalPieces();
+  std::pair<int, int> counts{game.getTotalPieces()};
   int white = counts.first;
   int black = counts.second;
   int diff = black - white;
