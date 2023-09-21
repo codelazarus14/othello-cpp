@@ -103,17 +103,13 @@ void backUp(HashTable<MCNode>& hashy, std::vector<std::pair<size_t, int>> kmAcc,
     int move = keyMove.second;
 
     try {
-      // TODO: because i'm an idiot we can't edit the node's contents directly (.second of the KV pair)
-      MCNode node{hashy.get(key)};
+      MCNode& node = hashy.get(key);
 
       // update stats on each node from each key/move pair
       node.numVisits++;
       node.moveVisits[move]++;
       node.moveScores[move] += 
         (result - node.moveScores[move]) / node.moveVisits[move];
-      // wipe the old node, then add the new one
-      hashy.remove(key);
-      hashy.insert(key, node);
     }
       // shouldn't except if this key was either already in the table or added in the last iteration of simTree()
     catch (std::invalid_argument err) {

@@ -5,6 +5,7 @@
 #include "othello-rules.h"
 #include "hash-table.h"
 
+// for weighting unexplored nodes/moves without overflow
 constexpr float g_posInfinity = 10000000;
 constexpr float g_posInfinityInverse = 1 / g_posInfinity;
 

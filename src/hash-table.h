@@ -17,7 +17,7 @@ class HashTable {
     // call before getItem() to avoid an exception or just to check
     bool contains(size_t key);
     // throws std::invalid_argument exception if the item is not found
-    const T& get(size_t key);
+    T& get(size_t key);
     void insert(size_t key, const T& value);
     void remove(size_t key);
     // have to inline this because it doesn't like template classes
@@ -59,7 +59,7 @@ bool HashTable<T>::contains(size_t key) {
 }
 
 template <typename T>
-const T& HashTable<T>::get(size_t key) {
+T& HashTable<T>::get(size_t key) {
   int bucket = hash(key);
   
   for (int i = 0; i < m_table[bucket].size(); i++) {
