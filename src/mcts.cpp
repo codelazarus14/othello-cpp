@@ -94,7 +94,7 @@ std::vector<std::pair<size_t, int>> simTree(Othello& game, MCTree& tree, float c
   return kmAcc;
 }
 
-void backUp(HashTable<MCNode>& hashy, std::vector<std::pair<size_t, int>> kmAcc, float result) {
+void backUp(HashTable<MCNode>& hashy, const std::vector<std::pair<size_t, int>>& kmAcc, float result) {
   for (std::pair<size_t, int> keyMove : kmAcc) {
     size_t key = keyMove.first;
     int move = keyMove.second;

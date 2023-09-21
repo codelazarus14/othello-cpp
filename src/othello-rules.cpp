@@ -165,8 +165,8 @@ bool isGameOver(Othello& game) {
 static std::pair<int, int> randomMove(const Othello& game) {
   std::vector<std::pair<int, int>> moves{legalMoves(game)};
 
-	std::random_device rd;	// a seed source for the random number engine
-	std::mt19937 gen(rd());	// mersenne_twister_engine seeded with rd()
+	static std::random_device rd;	// a seed source for the random number engine
+	static std::mt19937 gen(rd());	// mersenne_twister_engine seeded with rd()
 	std::uniform_int_distribution<> distrib(0, moves.size() - 1);
 
   return moves[distrib(gen)];
@@ -198,21 +198,21 @@ float defaultPolicy(Othello& game) {
 }
 
 // helper for debugging
-static std::string printBinary(const uint64_t& number) {
-  int counter = 0;
-  uint64_t binary = number;
-  std::string out;
+// static std::string printBinary(const uint64_t& number) {
+//   int counter = 0;
+//   uint64_t binary = number;
+//   std::string out;
 
-  while (counter < 64) {
-    if (binary & 1)
-      out.push_back('1');
-    else 
-      out.push_back('0');
-    binary >>= 1;
-    counter++;
-    if (counter % 8 == 0 && counter != 64)
-      out.push_back('_');
-  }
-  std::reverse(out.begin(), out.end());
-  return out;
-}
+//   while (counter < 64) {
+//     if (binary & 1)
+//       out.push_back('1');
+//     else 
+//       out.push_back('0');
+//     binary >>= 1;
+//     counter++;
+//     if (counter % 8 == 0 && counter != 64)
+//       out.push_back('_');
+//   }
+//   std::reverse(out.begin(), out.end());
+//   return out;
+// }
