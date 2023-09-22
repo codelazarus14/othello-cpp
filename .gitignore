@@ -1,6 +1,7 @@
 .vscode/
 build/
 Othello SFML/.vs/
+Othello SFML/x64/
 
 *.obj
 *.pdb
