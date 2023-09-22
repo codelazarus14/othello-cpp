@@ -1,5 +1,7 @@
 .vscode/
 build/
+Othello SFML/.vs/
 
 *.obj
 *.pdb
+*.user
