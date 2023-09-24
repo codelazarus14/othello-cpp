@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& out, const MCNode& node) {
 
 int selectMove(const MCNode& node, float c) {
   const Player& player = node.whoseTurn;
-  int numMoves = node.moves.size();
+  size_t numMoves = node.moves.size();
 
   if (!numMoves) {
     std::ostringstream err;
@@ -153,7 +153,7 @@ std::pair<int, int> uctSearch(const Othello& origGame, int numSims, float c, boo
   return root.moves[bestMove];
 }
 
-void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool verbose) {
+void compete(int blackSims, float blackC, int whiteSims, float whiteC, bool verbose) {
   Othello game;
 
   while (!isGameOver(game)) {
@@ -185,6 +185,6 @@ void compete(int blackSims, float blackC, int whiteSims, int whiteC, bool verbos
   }
 }
 
-int main() {
-  compete(1000, 2, 1000, 2, true);
-}
+//int main() {
+//  compete(1000, 2, 1000, 2, true);
+//}

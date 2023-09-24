@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\samed\Desktop\_code\vscode experiments\othello\Othello SFML\SFML-2.6.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\samed\Desktop\_code\vscode experiments\othello\src;C:\Users\samed\Desktop\_code\vscode experiments\othello\Othello SFML\SFML-2.6.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,7 +130,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\mcts.cpp" />
+    <ClCompile Include="..\src\othello-rules.cpp" />
+    <ClCompile Include="..\src\othello.cpp" />
     <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\hash-table.h" />
+    <ClInclude Include="..\src\mcts.h" />
+    <ClInclude Include="..\src\othello-rules.h" />
+    <ClInclude Include="..\src\othello.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

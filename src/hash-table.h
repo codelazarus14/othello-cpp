@@ -29,8 +29,8 @@ class HashTable {
         if (bucket.empty()) continue;
         
         out << "Index: " << i << "\n";
-        std::vector<std::pair<size_t, T>>::iterator itr;
-        for (itr = bucket.begin(); itr != bucket.end(); itr++)
+        auto itr{bucket.begin()};
+        for (; itr != bucket.end(); itr++)
         {
           std::pair<size_t, T> item{*itr};
           out << "  Key: " << item.first << "\n";
@@ -82,8 +82,8 @@ template <typename T>
 void HashTable<T>::remove(size_t key) {
   int index = hash(key);
 
-  std::vector<std::pair<size_t, T>>::iterator itr;
-  for (itr = m_table[index].begin(); itr != m_table[index].end(); itr++) {
+  auto itr{m_table[index].begin()};
+  for (; itr != m_table[index].end(); itr++) {
     if ((*itr).first == key) {
       m_table[index].erase(itr);
       break;

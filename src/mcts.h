@@ -41,7 +41,7 @@ int selectMove(const MCNode& node, float c);
 // move = an index into the moves vector of the corresponding node
 std::vector<std::pair<size_t, int>> simTree(Othello& game, MCTree& tree, float c);
 // explore a path using the default policy (random moves)
-float simDefault(Othello& game) { return defaultPolicy(game); }
+inline float simDefault(Othello& game) { return defaultPolicy(game); }
 // update the relevant nodes in the hash table with a list of (key, move) accumulated pairs from a simulation run and the final score
 void backUp(HashTable<MCNode>& hashy, const std::vector<std::pair<size_t, int>>& kmAcc, float result);
 // uses the MCTS algorithm with the given parameters to estimate the best possible move for the current game state

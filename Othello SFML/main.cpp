@@ -1,4 +1,5 @@
 #include <SFML/Graphics.hpp>
+#include "mcts.h"
 
 constexpr int g_boardScale{ 100 };
 constexpr float g_boardPadding{ g_boardScale / 10 };
@@ -16,6 +17,32 @@ static void addPiece(sf::Color color, int posn) {
 	pieces.push_back(piece);
 }
 
+static void updatePiecesFromBoard(Othello& game) {
+	for (int i = 0; i < 64; i++) {
+		if (game.getBlackPieces()[i])
+			addPiece(sf::Color::Black, i);
+		else if (game.getWhitePieces()[i])
+			addPiece(sf::Color::White, i);
+	}
+}
+
+static void doMoveAndUpdateBoard(Othello& game, int blackSims, float blackC, int whiteSims, float whiteC) {
+	pieces.clear();
+
+	std::pair<int, int> move;
+	if (game.getWhoseTurn() == Player::black) {
+		std::cout << "\nBLACK'S TURN!\n";
+		move = uctSearch(game, blackSims, blackC, false);
+	}
+	else {
+		std::cout << "\nWHITE'S TURN!\n";
+		move = uctSearch(game, whiteSims, whiteC, false);
+	}
+	doMove(game, false, move.first, move.second);
+
+	updatePiecesFromBoard(game);
+}
+
 int main() {
 	constexpr int dimensions{ static_cast<int>(8 * (g_boardScale + g_boardPadding) + g_boardPadding) };
 
@@ -30,11 +57,10 @@ int main() {
 		square.setPosition(xPos, yPos);
 		squares.push_back(square);
 	}
-	// TODO: populate from othello struct
-	addPiece(sf::Color::White, 27);
-	addPiece(sf::Color::White, 36);
-	addPiece(sf::Color::Black, 28);
-	addPiece(sf::Color::Black, 35);
+
+	Othello game;
+	updatePiecesFromBoard(game);
+	bool resultPrinted = false;
 
 	while (window.isOpen()) {
 		sf::Event event;
@@ -54,6 +80,22 @@ int main() {
 		for (sf::RectangleShape square : squares) window.draw(square);
 		for (sf::CircleShape piece : pieces) window.draw(piece);
 		window.display();
+
+		if (!isGameOver(game))
+			doMoveAndUpdateBoard(game, 1000, 2, 1000, 2);
+		else if (!resultPrinted) {
+			std::pair<int, int> counts{ game.getTotalPieces() };
+			if (counts.first - counts.second > 0) {
+				std::cout << "\nWhite wins!\n";
+			}
+			else if (counts.first - counts.second < 0) {
+				std::cout << "\nBlack wins!\n";
+			}
+			else {
+				std::cout << "\nTie!\n";
+			}
+			resultPrinted = true;
+		}
 	}
 
 	return 0;
