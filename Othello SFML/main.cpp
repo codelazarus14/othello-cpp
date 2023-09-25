@@ -1,6 +1,7 @@
 #include <thread>
 #include <SFML/Graphics.hpp>
 #include "mcts.h"
+#include "sfml-buttons.h"
 
 constexpr int g_boardScale{ 100 };
 constexpr float g_boardPadding{ g_boardScale / 10 };
@@ -87,13 +88,13 @@ int main() {
 	// overlay for indicating window received Event::Closed
 	sf::RectangleShape overlay{ {dimensions, dimensions} };
 	overlay.setFillColor(sf::Color(0, 0, 0, 150));
-	int fontSize = 50;
+	const int fontSize = 50;
 	sf::Text overlayText;
 	overlayText.setFont(othelloFont);
 	overlayText.setString("Exiting...");
 	overlayText.setCharacterSize(fontSize);
 	overlayText.setStyle(sf::Text::Bold);
-	overlayText.setOrigin(overlayText.getGlobalBounds().width / 2, overlayText.getGlobalBounds().height / 1.5f);
+	overlayText.setOrigin(overlayText.getLocalBounds().width / 2, overlayText.getLocalBounds().height / 2);
 	overlayText.setPosition(dimensions / 2.0f, dimensions / 4.0f);
 
 	// start game logic thread
@@ -110,6 +111,9 @@ int main() {
 			case sf::Event::Closed:
 				window.draw(overlay);
 				window.draw(overlayText);
+				OthelloSF::Button button{ othelloFont, "Another button" };
+				button.setPosition(100, 100);
+				window.draw(button);
 				window.display();
 				gameClosed = true;
 				gameThread.join();

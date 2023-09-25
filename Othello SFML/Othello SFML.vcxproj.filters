@@ -27,6 +27,12 @@
     <ClCompile Include="..\src\othello.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sfml-buttons.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sfml-buttons.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\hash-table.h">

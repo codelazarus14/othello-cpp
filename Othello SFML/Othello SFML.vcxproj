@@ -134,6 +134,8 @@
     <ClCompile Include="..\src\othello-rules.cpp" />
     <ClCompile Include="..\src\othello.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="sfml-buttons.cpp" />
+    <ClCompile Include="sfml-buttons.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\hash-table.h" />
