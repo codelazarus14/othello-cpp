@@ -1,3 +1,4 @@
+#include <thread>
 #include <SFML/Graphics.hpp>
 #include "mcts.h"
 
@@ -6,8 +7,10 @@ constexpr float g_boardPadding{ g_boardScale / 10 };
 constexpr float g_squareOffset{ g_boardScale + g_boardPadding };
 
 static sf::Color othelloGreen{ 0, 128, 0, 255 };
+static sf::Font othelloFont;
 static std::vector<sf::RectangleShape> squares;
 static std::vector<sf::CircleShape> pieces;
+static bool gameClosed = false;
 
 static void addPiece(sf::Color color, int posn) {
 	sf::CircleShape piece{ g_boardScale / 2 };
@@ -26,24 +29,45 @@ static void updatePiecesFromBoard(Othello& game) {
 	}
 }
 
+// game logic
 static void doMoveAndUpdateBoard(Othello& game, int blackSims, float blackC, int whiteSims, float whiteC) {
-	pieces.clear();
+	while (!isGameOver(game) && !gameClosed) {
 
-	std::pair<int, int> move;
-	if (game.getWhoseTurn() == Player::black) {
-		std::cout << "\nBLACK'S TURN!\n";
-		move = uctSearch(game, blackSims, blackC, false);
-	}
-	else {
-		std::cout << "\nWHITE'S TURN!\n";
-		move = uctSearch(game, whiteSims, whiteC, false);
-	}
-	doMove(game, false, move.first, move.second);
+		std::pair<int, int> move;
+		if (game.getWhoseTurn() == Player::black) {
+			std::cout << "\nBLACK'S TURN!\n";
+			move = uctSearch(game, blackSims, blackC, false);
+		}
+		else {
+			std::cout << "\nWHITE'S TURN!\n";
+			move = uctSearch(game, whiteSims, whiteC, false);
+		}
+		doMove(game, false, move.first, move.second);
 
-	updatePiecesFromBoard(game);
+		pieces.clear();
+		updatePiecesFromBoard(game);
+	}
+	// debug print after loop
+	if (!gameClosed) {
+		std::pair<int, int> counts{ game.getTotalPieces() };
+		if (counts.first - counts.second > 0) {
+			std::cout << "\nWhite wins!\n";
+		}
+		else if (counts.first - counts.second < 0) {
+			std::cout << "\nBlack wins!\n";
+		}
+		else {
+			std::cout << "\nTie!\n";
+		}
+	}
 }
 
 int main() {
+	if (!othelloFont.loadFromFile("PTSans-Regular.ttf")) {
+		std::cout << "Error loading font file!" << "\n";
+		return -1;
+	}
+
 	constexpr int dimensions{ static_cast<int>(8 * (g_boardScale + g_boardPadding) + g_boardPadding) };
 
 	sf::RenderWindow window(sf::VideoMode(dimensions, dimensions), "Othello");
@@ -60,42 +84,45 @@ int main() {
 
 	Othello game;
 	updatePiecesFromBoard(game);
-	bool resultPrinted = false;
+	// overlay for indicating window received Event::Closed
+	sf::RectangleShape overlay{ {dimensions, dimensions} };
+	overlay.setFillColor(sf::Color(0, 0, 0, 150));
+	int fontSize = 50;
+	sf::Text overlayText;
+	overlayText.setFont(othelloFont);
+	overlayText.setString("Exiting...");
+	overlayText.setCharacterSize(fontSize);
+	overlayText.setStyle(sf::Text::Bold);
+	overlayText.setOrigin(overlayText.getGlobalBounds().width / 2, overlayText.getGlobalBounds().height / 1.5f);
+	overlayText.setPosition(dimensions / 2.0f, dimensions / 4.0f);
+
+	// start game logic thread
+	std::thread gameThread{ doMoveAndUpdateBoard, std::ref(game), 1000, 2, 1000, 2};
 
 	while (window.isOpen()) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
 			switch (event.type) {
 			case sf::Event::KeyReleased:
-				if (event.key.scancode != sf::Keyboard::Scan::Escape)
+				if (event.key.scancode != sf::Keyboard::Scan::Escape) {
 					break;
+				}
 			case sf::Event::Closed:
+				window.draw(overlay);
+				window.draw(overlayText);
+				window.display();
+				gameClosed = true;
+				gameThread.join();
 				window.close();
 				break;
 			}
 		}
 
 		window.clear();
-		// draw the board
+		// draw the current board
 		for (sf::RectangleShape square : squares) window.draw(square);
 		for (sf::CircleShape piece : pieces) window.draw(piece);
 		window.display();
-
-		if (!isGameOver(game))
-			doMoveAndUpdateBoard(game, 1000, 2, 1000, 2);
-		else if (!resultPrinted) {
-			std::pair<int, int> counts{ game.getTotalPieces() };
-			if (counts.first - counts.second > 0) {
-				std::cout << "\nWhite wins!\n";
-			}
-			else if (counts.first - counts.second < 0) {
-				std::cout << "\nBlack wins!\n";
-			}
-			else {
-				std::cout << "\nTie!\n";
-			}
-			resultPrinted = true;
-		}
 	}
 
 	return 0;
