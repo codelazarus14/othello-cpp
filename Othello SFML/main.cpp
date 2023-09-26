@@ -34,8 +34,13 @@ void createBoardSquares() {
 // create drawable UI elements
 void createBoardUI() {
 	OthelloSF::Button button{ s_othelloFont, "Another button" };
-	button.setPosition(g_dimensions, 500);
+	button.setPosition(g_dimensions + g_boardPadding, g_dimensions / 2);
+
+	OthelloSF::Button button2{ s_othelloFont, "A button" };
+	button2.setPosition(g_dimensions + g_boardPadding, g_dimensions / 2 - button.getGlobalBounds().height * 2);
+
 	s_UIButtons.push_back(button);
+	s_UIButtons.push_back(button2);
 }
 
 // create drawable for board posn
@@ -104,7 +109,6 @@ void doMoveAndUpdateBoard(Othello& game, int blackSims, float blackC, int whiteS
 	while (!isGameOver(game) && !s_windowClosing) {
 		// draw current board state
 		updatePiecesFromBoard(game);
-		renderFunc(window, false);
 
 		std::pair<int, int> move;
 		if (game.getWhoseTurn() == Player::black) {
@@ -134,9 +138,46 @@ void doMoveAndUpdateBoard(Othello& game, int blackSims, float blackC, int whiteS
 	}
 }
 
+void onMouseMoved(sf::Event::MouseMoveEvent mouseMove) {
+	for (OthelloSF::Button& button : s_UIButtons) {
+		sf::FloatRect bounds = button.getGlobalBounds();
+
+		if (bounds.contains(mouseMove.x, mouseMove.y) && !button.isHovered())
+			button.onHoverEnter();
+		else if (!bounds.contains(mouseMove.x, mouseMove.y) && button.isHovered() && !button.isActive())
+			button.onHoverExit();
+	}
+}
+
+void onMousePressed(sf::Event::MouseButtonEvent mousePress) {
+	if (mousePress.button == sf::Mouse::Left) {
+		for (OthelloSF::Button& button : s_UIButtons) {
+			sf::FloatRect bounds = button.getGlobalBounds();
+
+			if (bounds.contains(mousePress.x, mousePress.y) && !button.isActive()) {
+				button.onPress([]() {
+					std::cout << "Button clicked!" << std::endl;
+				});
+			}
+		}
+	}
+}
+
+void onMouseReleased(sf::Event::MouseButtonEvent mouseRelease) {
+	if (mouseRelease.button == sf::Mouse::Left) {
+		for (OthelloSF::Button& button : s_UIButtons) {
+
+			if (button.isActive()) {
+				button.onRelease();
+				std::cout << "Button released!" << std::endl;
+			}
+		}
+	}
+}
+
 int main() {
 	if (!s_othelloFont.loadFromFile("PTSans-Regular.ttf")) {
-		std::cout << "Error loading font file!" << "\n";
+		std::cout << "Error loading font file!" << std::endl;
 		return -1;
 	}
 
@@ -156,6 +197,7 @@ int main() {
 		sf::Event event;
 		while (window.pollEvent(event)) {
 			switch (event.type) {
+			// check for window close
 			case sf::Event::KeyReleased:
 				if (event.key.scancode != sf::Keyboard::Scan::Escape)
 					break;
@@ -165,7 +207,19 @@ int main() {
 				gameThread.join();
 				window.close();
 				break;
+			// check for mouse movement
+			case sf::Event::MouseMoved:
+				onMouseMoved(event.mouseMove);
+				break;
+			case sf::Event::MouseButtonPressed:
+				onMousePressed(event.mouseButton);
+				break;
+			case sf::Event::MouseButtonReleased:
+				onMouseReleased(event.mouseButton);
+				break;
 			}
+
+			renderBoard(window, false);
 		}
 	}
 
