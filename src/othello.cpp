@@ -13,7 +13,7 @@ Othello::Othello() {
   std::array<int, 4> startingPieces{27, 36, 28, 35};
 
   // quick lambda so we don't have to overload Othello::placePiece
-  auto setupPiece = [&](const Player& player, int posn) {
+  auto setupPiece = [&m_board = this->m_board](const Player& player, int posn) {
     m_board[toRow(posn)][toCol(posn)] = player;
   };
 

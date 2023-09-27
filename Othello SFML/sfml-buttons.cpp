@@ -2,6 +2,7 @@
 
 namespace OthelloSF {
 	void Button::draw(sf::RenderTarget& target, sf::RenderStates states) const {
+		if (!m_isVisible) return;
 		target.draw(m_shadowRect);
 		target.draw(m_buttonRect);
 		target.draw(m_text);
@@ -27,10 +28,11 @@ namespace OthelloSF {
 
 		m_isHovered = false;
 		m_active = false;
+		m_isVisible = true;
 	}
 
 	sf::FloatRect Button::getGlobalBounds() {
-		return m_buttonRect.getGlobalBounds();
+		return m_shadowRect.getGlobalBounds();
 	}
 
 	sf::Vector2f Button::getPosition() {
@@ -45,9 +47,9 @@ namespace OthelloSF {
 
 	void Button::onHoverEnter() {
 		m_isHovered = true;
-		m_buttonRect.setFillColor({ m_color.r, m_color.g, m_color.b, (sf::Uint8)(m_color.a / 2) });
-		m_shadowRect.setFillColor({ m_color.r, m_color.g, m_color.b, (sf::Uint8)(m_color.a / 4) });
-		m_text.setFillColor({ m_textColor.r, m_textColor.g, m_textColor.b, (sf::Uint8)(m_textColor.a / 2) });
+		m_buttonRect.setFillColor({ m_color.r, m_color.g, m_color.b, (sf::Uint8)(m_color.a / 1.5f) });
+		m_shadowRect.setFillColor({ m_color.r, m_color.g, m_color.b, (sf::Uint8)(m_color.a / 2.5f) });
+		m_text.setFillColor({ m_textColor.r, m_textColor.g, m_textColor.b, (sf::Uint8)(m_textColor.a / 1.5f) });
 	}
 
 	void Button::onHoverExit() {
@@ -65,8 +67,9 @@ namespace OthelloSF {
 		m_buttonRect.setPosition(pos.x + bounds.height / 20, pos.y + bounds.height / 20);
 	}
 
-	void Button::onRelease() {
+	void Button::onRelease(const std::function<void()>& callback) {
 		m_active = false;
+		callback();
 		sf::FloatRect bounds = m_buttonRect.getLocalBounds();
 		sf::Vector2f pos = m_buttonRect.getPosition();		
 		m_buttonRect.setPosition(pos.x - bounds.height / 20, pos.y - bounds.height / 20);

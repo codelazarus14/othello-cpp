@@ -68,7 +68,7 @@ std::vector<std::pair<size_t, int>> simTree(Othello& game, MCTree& tree, float c
   std::vector<std::pair<size_t, int>> kmAcc;
 
   // select a move, do it and update the game/accumulator
-  auto pickMoveAndPush = [&](Othello& game, const MCNode& node, size_t key) {
+  auto pickMoveAndPush = [c, &kmAcc](Othello& game, const MCNode& node, size_t key) {
       int moveIdx = selectMove(node, c);
 
       game = doMove(game, false, node.moves[moveIdx].first, node.moves[moveIdx].second);
