@@ -17,12 +17,12 @@ sf::RectangleShape s_overlay{ {g_dimensions, g_dimensions} };
 std::vector<sf::RectangleShape> s_squares;
 std::vector<sf::CircleShape> s_pieces;
 std::vector<OthelloSF::Button> s_overlayUI;
+bool s_isPaused{ false };
 
 enum class BoardState {
 	Setup,
 	HumanTurn,
 	CPUTurn,
-	Paused,
 	Exit
 };
 BoardState s_boardState;
@@ -47,17 +47,12 @@ void createBoardSquares() {
 
 // create drawable UI elements
 void createBoardUI() {
-	// s_UIButtons[0] = start button
+	// s_overlayUI[0] = start
 	OthelloSF::Button startButton{ s_othelloFont, "Start" };
 	sf::FloatRect startBounds{ startButton.getGlobalBounds() };
 	startButton.setPosition(g_dimensions / 2 - startBounds.width / 2, g_dimensions / 2 - startBounds.height / 2);
 
-	OthelloSF::Button resetButton{ s_othelloFont, "Reset" };
-	sf::FloatRect resetBounds{ resetButton.getGlobalBounds() };
-	resetButton.setPosition(g_dimensions / 2 - resetBounds.width / 2, g_dimensions / 1.5f - resetBounds.height / 2);
-
 	s_overlayUI.push_back(startButton);
-	s_overlayUI.push_back(resetButton);
 }
 
 // create drawable for board posn
@@ -97,33 +92,42 @@ void renderBoard(sf::RenderWindow& window) {
 	for (sf::RectangleShape square : s_squares) window.draw(square);
 	for (sf::CircleShape piece : s_pieces) window.draw(piece);
 
-	auto setTextProperties = [](sf::Text& text, const std::string& str) {
+	auto setTextProperties = [](sf::Text& text, const std::string& str, int size = g_textFontSize) {
 		text.setFont(s_othelloFont);
-		text.setCharacterSize(g_textFontSize);
+		text.setCharacterSize(size);
 		text.setStyle(sf::Text::Bold);
 		text.setString(str);
 		text.setOrigin(text.getLocalBounds().width / 2, text.getLocalBounds().height / 2);
 	};
 
+	// draw overlay/text on sidebar
+	sf::Text escKeyText;
+	setTextProperties(escKeyText, "ESC = Pause", 40);
+	escKeyText.setPosition(g_dimensions * 1.25f, escKeyText.getLocalBounds().height);
 	sf::Text overlayText;
 	overlayText.setPosition(g_dimensions / 2.0f, g_dimensions / 4.0f);
 	sf::Text moveText;
 	moveText.setPosition(g_dimensions * 1.25f, g_dimensions / 8.0f);
 
-	switch (s_boardState) {
+	if (s_isPaused) {
+		setTextProperties(overlayText, "Paused");
+		window.draw(s_overlay);
+		window.draw(overlayText);
+	} else switch (s_boardState) {
 	case BoardState::Setup:
 		setTextProperties(overlayText, "Othello");
 		window.draw(s_overlay);
 		window.draw(overlayText);
 		break;
+	case BoardState::HumanTurn:
+		setTextProperties(moveText, "Human Move...");
+		window.draw(moveText);
+		window.draw(escKeyText);
+		break;
 	case BoardState::CPUTurn:
 		setTextProperties(moveText, "CPU Move...");
 		window.draw(moveText);
-		break;
-	case BoardState::Paused:
-		setTextProperties(overlayText, "Paused");
-		window.draw(s_overlay);
-		window.draw(overlayText);
+		window.draw(escKeyText);
 		break;
 	case BoardState::Exit:
 		setTextProperties(overlayText, "Exiting...");
@@ -176,6 +180,8 @@ void cpuTurn(Othello& game, int blackSims, float blackC, int whiteSims, float wh
 
 void onMouseMoved(sf::Event::MouseMoveEvent mouseMove) {
 	for (OthelloSF::Button& button : s_overlayUI) {
+		if (!button.isVisible()) continue;
+
 		sf::FloatRect bounds = button.getGlobalBounds();
 
 		if (bounds.contains(mouseMove.x, mouseMove.y) && !button.isHovered())
@@ -188,6 +194,8 @@ void onMouseMoved(sf::Event::MouseMoveEvent mouseMove) {
 void onMousePressed(sf::Event::MouseButtonEvent mousePress) {
 	if (mousePress.button == sf::Mouse::Left) {
 		for (OthelloSF::Button& button : s_overlayUI) {
+			if (!button.isVisible()) continue;
+
 			sf::FloatRect bounds = button.getGlobalBounds();
 
 			if (bounds.contains(mousePress.x, mousePress.y) && !button.isActive()) {
@@ -201,22 +209,43 @@ void onMousePressed(sf::Event::MouseButtonEvent mousePress) {
 
 void onMouseReleased(sf::Event::MouseButtonEvent mouseRelease, Othello& game, std::thread& gameThread) {
 	if (mouseRelease.button == sf::Mouse::Left) {
-		for (OthelloSF::Button& button : s_overlayUI) {
+		if (s_boardState == BoardState::Setup || s_isPaused) {
+			OthelloSF::Button& startButton = s_overlayUI[0];
 
-			if (button.isActive()) {
-				button.onRelease([&game, &gameThread]() {
-					std::cout << "Button released!" << std::endl;
-					if (s_boardState == BoardState::Setup) {
+			if (startButton.isActive()) {
+				if (s_boardState == BoardState::Setup) {
+					startButton.onRelease([&startButton, &game, &gameThread]() {
 						s_boardState = BoardState::CPUTurn;
 
-						// remove start button
 						for (OthelloSF::Button& b : s_overlayUI) b.setVisible(false);
+						// Start -> Reset button
+						startButton.setString("TODO: NOT WORKING!");
+						sf::FloatRect startBounds{ startButton.getGlobalBounds() };
+						startButton.setPosition(g_dimensions / 2 - startBounds.width / 2, g_dimensions / 2 - startBounds.height / 2);
 
 						// start game/logic thread
 						gameThread = std::thread{ cpuTurn, std::ref(game), 1000, 2, 1000, 2 };
-					}
-				});
+					});
+				}
+				else if (s_isPaused) {
+					startButton.onRelease([]() {
+						// todo: reset game from here
+					});
+				}
 			}
+		}
+	}
+}
+
+void onKeyReleased(sf::Event::KeyEvent keyRelease) {
+	if (keyRelease.scancode == sf::Keyboard::Scan::Escape) {
+		if (!s_isPaused && s_boardState != BoardState::Setup) {
+			s_isPaused = true;
+			s_overlayUI[0].setVisible(true);
+		}
+		else if (s_isPaused) {
+			s_isPaused = false;
+			s_overlayUI[0].setVisible(false);
 		}
 	}
 }
@@ -253,14 +282,12 @@ int main() {
 		sf::Event event;
 		while (window.pollEvent(event)) {
 			switch (event.type) {
-				// check for window close
-			case sf::Event::KeyReleased:
-				if (event.key.scancode != sf::Keyboard::Scan::Escape)
-					break;
 			case sf::Event::Closed:
 				onWindowClosed(window, gameThread);
 				break;
-				// check for mouse movement
+			case sf::Event::KeyReleased:
+				onKeyReleased(event.key);
+				break;
 			case sf::Event::MouseMoved:
 				onMouseMoved(event.mouseMove);
 				break;

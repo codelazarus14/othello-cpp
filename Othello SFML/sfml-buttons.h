@@ -24,6 +24,7 @@ namespace OthelloSF {
 		sf::Text getText() { return m_text; }
 		void setPosition(float x, float y);
 		void setVisible(bool visible) { m_isVisible = visible; }
+		void setString(const std::string& str);
 		bool isHovered() { return m_isHovered; }
 		bool isActive() { return m_active; }
 		bool isVisible() { return m_isVisible; }
