@@ -17,12 +17,11 @@ sf::RectangleShape s_overlay{ {g_dimensions, g_dimensions} };
 std::vector<sf::RectangleShape> s_squares;
 std::vector<sf::CircleShape> s_pieces;
 std::vector<OthelloSF::Button> s_overlayUI;
-bool s_isPaused{ false };
 
 enum class BoardState {
 	Setup,
-	HumanTurn,
-	CPUTurn,
+	Playing,
+	Paused,
 	Exit
 };
 BoardState s_boardState;
@@ -107,37 +106,34 @@ void renderBoard(sf::RenderWindow& window) {
 	sf::Text overlayText;
 	overlayText.setPosition(g_dimensions / 2.0f, g_dimensions / 4.0f);
 	sf::Text moveText;
+	setTextProperties(moveText, "Current Player");
 	moveText.setPosition(g_dimensions * 1.25f, g_dimensions / 8.0f);
 
-	if (s_isPaused) {
-		setTextProperties(overlayText, "Paused");
-		window.draw(s_overlay);
-		window.draw(overlayText);
-	} else switch (s_boardState) {
+	switch (s_boardState) {
 	case BoardState::Setup:
 		setTextProperties(overlayText, "Othello");
 		window.draw(s_overlay);
 		window.draw(overlayText);
+		for (OthelloSF::Button button : s_overlayUI) window.draw(button);
 		break;
-	case BoardState::HumanTurn:
-		setTextProperties(moveText, "Human Move...");
-		window.draw(moveText);
+	case BoardState::Playing:
 		window.draw(escKeyText);
+		window.draw(moveText);
 		break;
-	case BoardState::CPUTurn:
-		setTextProperties(moveText, "CPU Move...");
+	case BoardState::Paused:
 		window.draw(moveText);
-		window.draw(escKeyText);
+		setTextProperties(overlayText, "Paused");
+		window.draw(s_overlay);
+		window.draw(overlayText);
+		for (OthelloSF::Button button : s_overlayUI) window.draw(button);
 		break;
 	case BoardState::Exit:
+		window.draw(moveText);
 		setTextProperties(overlayText, "Exiting...");
 		window.draw(s_overlay);
 		window.draw(overlayText);
 		break;
 	}
-
-	// draw overlay UI
-	for (OthelloSF::Button button : s_overlayUI) window.draw(button);
 
 	window.display();
 	window.setActive(false);
@@ -146,7 +142,8 @@ void renderBoard(sf::RenderWindow& window) {
 void cpuTurn(Othello& game, int blackSims, float blackC, int whiteSims, float whiteC) {
 	// main loop
 	int previousMove{};
-	while (!isGameOver(game) && s_boardState == BoardState::CPUTurn) {
+	while (!isGameOver(game) && s_boardState != BoardState::Exit) {
+		if (s_boardState == BoardState::Paused) continue;
 		// draw current board state
 		updatePiecesFromBoard(game, previousMove);
 
@@ -209,15 +206,14 @@ void onMousePressed(sf::Event::MouseButtonEvent mousePress) {
 
 void onMouseReleased(sf::Event::MouseButtonEvent mouseRelease, Othello& game, std::thread& gameThread) {
 	if (mouseRelease.button == sf::Mouse::Left) {
-		if (s_boardState == BoardState::Setup || s_isPaused) {
+		if (s_boardState == BoardState::Setup || s_boardState == BoardState::Paused) {
 			OthelloSF::Button& startButton = s_overlayUI[0];
 
 			if (startButton.isActive()) {
 				if (s_boardState == BoardState::Setup) {
 					startButton.onRelease([&startButton, &game, &gameThread]() {
-						s_boardState = BoardState::CPUTurn;
+						s_boardState = BoardState::Playing;
 
-						for (OthelloSF::Button& b : s_overlayUI) b.setVisible(false);
 						// Start -> Reset button
 						startButton.setString("TODO: NOT WORKING!");
 						sf::FloatRect startBounds{ startButton.getGlobalBounds() };
@@ -227,7 +223,7 @@ void onMouseReleased(sf::Event::MouseButtonEvent mouseRelease, Othello& game, st
 						gameThread = std::thread{ cpuTurn, std::ref(game), 1000, 2, 1000, 2 };
 					});
 				}
-				else if (s_isPaused) {
+				else if (s_boardState == BoardState::Paused) {
 					startButton.onRelease([]() {
 						// todo: reset game from here
 					});
@@ -238,15 +234,11 @@ void onMouseReleased(sf::Event::MouseButtonEvent mouseRelease, Othello& game, st
 }
 
 void onKeyReleased(sf::Event::KeyEvent keyRelease) {
+	// toggle pausing
 	if (keyRelease.scancode == sf::Keyboard::Scan::Escape) {
-		if (!s_isPaused && s_boardState != BoardState::Setup) {
-			s_isPaused = true;
-			s_overlayUI[0].setVisible(true);
-		}
-		else if (s_isPaused) {
-			s_isPaused = false;
-			s_overlayUI[0].setVisible(false);
-		}
+		if (s_boardState == BoardState::Setup) return;
+
+		s_boardState = s_boardState == BoardState::Paused ? BoardState::Playing : BoardState::Paused;
 	}
 }
 
