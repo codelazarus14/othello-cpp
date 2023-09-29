@@ -17,18 +17,20 @@ sf::RectangleShape s_overlay{ {g_dimensions, g_dimensions} };
 std::vector<sf::RectangleShape> s_squares;
 std::vector<sf::CircleShape> s_pieces;
 std::vector<OthelloSF::Button> s_overlayUI;
+std::string s_whoseTurn;
 
 enum class BoardState {
 	Setup,
 	Playing,
 	Paused,
+	Resetting,
 	Exit
 };
 BoardState s_boardState;
 
 void createOverlay() {
 	// draw overlay for indicating window received Event::Closed
-	s_overlay.setFillColor(sf::Color(0, 0, 0, 150));
+	s_overlay.setFillColor(sf::Color(0, 0, 0, 160));
 }
 
 // create drawables for board
@@ -106,7 +108,7 @@ void renderBoard(sf::RenderWindow& window) {
 	sf::Text overlayText;
 	overlayText.setPosition(g_dimensions / 2.0f, g_dimensions / 4.0f);
 	sf::Text moveText;
-	setTextProperties(moveText, "Current Player");
+	setTextProperties(moveText, s_whoseTurn + "'s Turn");
 	moveText.setPosition(g_dimensions * 1.25f, g_dimensions / 8.0f);
 
 	switch (s_boardState) {
@@ -127,6 +129,12 @@ void renderBoard(sf::RenderWindow& window) {
 		window.draw(overlayText);
 		for (OthelloSF::Button button : s_overlayUI) window.draw(button);
 		break;
+	case BoardState::Resetting:
+		window.draw(moveText);
+		setTextProperties(overlayText, "Resetting...");
+		window.draw(s_overlay);
+		window.draw(overlayText);
+		break;
 	case BoardState::Exit:
 		window.draw(moveText);
 		setTextProperties(overlayText, "Exiting...");
@@ -140,10 +148,12 @@ void renderBoard(sf::RenderWindow& window) {
 }
 
 void cpuTurn(Othello& game, int blackSims, float blackC, int whiteSims, float whiteC) {
-	// main loop
 	int previousMove{};
-	while (!isGameOver(game) && s_boardState != BoardState::Exit) {
+	// main loop
+	while (!isGameOver(game) && s_boardState != BoardState::Exit && s_boardState != BoardState::Resetting) {
 		if (s_boardState == BoardState::Paused) continue;
+
+		s_whoseTurn = game.getWhoseTurn() == Player::black ? "Black" : "White";
 		// draw current board state
 		updatePiecesFromBoard(game, previousMove);
 
@@ -161,7 +171,7 @@ void cpuTurn(Othello& game, int blackSims, float blackC, int whiteSims, float wh
 	}
 
 	// debug print after game over
-	if (s_boardState != BoardState::Exit) {
+	if (s_boardState != BoardState::Exit && s_boardState != BoardState::Resetting) {
 		std::pair<int, int> counts{ game.getTotalPieces() };
 		if (counts.first - counts.second > 0) {
 			std::cout << "\nWhite wins!\n";
@@ -204,28 +214,39 @@ void onMousePressed(sf::Event::MouseButtonEvent mousePress) {
 	}
 }
 
-void onMouseReleased(sf::Event::MouseButtonEvent mouseRelease, Othello& game, std::thread& gameThread) {
+void onMouseReleased(sf::Event::MouseButtonEvent mouseRelease, sf::RenderWindow& window, std::thread& gameThread, Othello& game) {
+	auto startNewGame = [&game, &gameThread](int bSims, float bC, int wSims, float wC) {
+		game = Othello{};
+		// start new game/logic thread
+		gameThread = std::thread{ cpuTurn, std::ref(game), bSims, bC, wSims, wC };
+	};
+
 	if (mouseRelease.button == sf::Mouse::Left) {
 		if (s_boardState == BoardState::Setup || s_boardState == BoardState::Paused) {
 			OthelloSF::Button& startButton = s_overlayUI[0];
 
 			if (startButton.isActive()) {
 				if (s_boardState == BoardState::Setup) {
-					startButton.onRelease([&startButton, &game, &gameThread]() {
+					startButton.onRelease([&startButton, &startNewGame]() {
 						s_boardState = BoardState::Playing;
 
 						// Start -> Reset button
-						startButton.setString("TODO: NOT WORKING!");
+						startButton.setString("Reset Game");
 						sf::FloatRect startBounds{ startButton.getGlobalBounds() };
 						startButton.setPosition(g_dimensions / 2 - startBounds.width / 2, g_dimensions / 2 - startBounds.height / 2);
 
-						// start game/logic thread
-						gameThread = std::thread{ cpuTurn, std::ref(game), 1000, 2, 1000, 2 };
+						startNewGame(1000, 2, 1000, 2);
 					});
 				}
 				else if (s_boardState == BoardState::Paused) {
-					startButton.onRelease([]() {
-						// todo: reset game from here
+					startButton.onRelease([&window, &gameThread, &game, &startNewGame]() {
+						s_boardState = BoardState::Resetting;
+						renderBoard(window);
+						if (gameThread.joinable())
+							gameThread.join();
+
+						s_boardState = BoardState::Playing;
+						startNewGame(1000, 2, 1000, 2);
 					});
 				}
 			}
@@ -267,8 +288,6 @@ int main() {
 	Othello game;
 	std::thread gameThread;
 
-	renderBoard(window);
-
 	// handle events
 	while (window.isOpen()) {
 		sf::Event event;
@@ -287,7 +306,7 @@ int main() {
 				onMousePressed(event.mouseButton);
 				break;
 			case sf::Event::MouseButtonReleased:
-				onMouseReleased(event.mouseButton, game, gameThread);
+				onMouseReleased(event.mouseButton, window, gameThread, game);
 				break;
 			}
 		}
