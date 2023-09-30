@@ -21,7 +21,11 @@ std::string s_whoseTurn;
 // B/W pair
 // false = CPU, true = human
 std::pair <bool, bool> s_players;
-bool s_pickingColor = false;
+bool s_pickingColor{ false };
+bool s_pickingMove{ false };
+bool s_showLegal{ true };
+std::vector<std::pair<int, int>> s_userLegalMoves;
+std::pair<int, int> s_userSelectedMove;
 
 enum class BoardState {
 	Setup,
@@ -163,25 +167,70 @@ void renderBoard(sf::RenderWindow& window) {
 	window.setActive(false);
 }
 
+std::pair<int, int> getUserMove(const Othello& game, bool showLegal) {
+	static int invalidPosn = 99;
+	static sf::Color transColor = s_players.first ?
+		sf::Color{ 0, 0, 0, 128 } :
+		sf::Color{ 255, 255, 255, 128 };
+	s_userLegalMoves = legalMoves(game);
+	size_t nTemp{ s_userLegalMoves.size() };
+
+	// skip user input if they can't make a move
+	if (nTemp == 1 && isPass(s_userLegalMoves[0]))
+		return s_userLegalMoves[0];
+
+	// temporarily add "pieces" to board
+	for (int i = 0; i < nTemp; i++) {
+		std::pair<int, int> pos{ s_userLegalMoves[i] };
+		int posn = pos.first * 8 + pos.second;
+		addPiece((showLegal ? transColor : s_othelloGreen), posn, invalidPosn);
+	}
+
+	s_pickingMove = true;
+	// todo: fix busy waiting
+	while (s_pickingMove) {
+		if (s_boardState == BoardState::Exit || s_boardState == BoardState::Resetting)
+			return s_userLegalMoves[0];
+	}
+
+	// remove temp pieces
+	for (int j = 0; j < nTemp; j++)
+		s_pieces.pop_back();
+
+	return s_userSelectedMove;
+
+}
+
 void gameLoop(Othello& game, int blackSims, float blackC, int whiteSims, float whiteC) {
 	int previousMove{};
 	// main loop
 	while (!isGameOver(game) && s_boardState != BoardState::Exit && s_boardState != BoardState::Resetting) {
 		if (s_boardState == BoardState::Paused) continue;
 
-		s_whoseTurn = game.getWhoseTurn() == Player::black ? "Black" : "White";
+		const Player currPlayer = game.getWhoseTurn();
+		bool isHuman = (currPlayer == Player::black && s_players.first)
+			|| (currPlayer == Player::white && s_players.second);
+		s_whoseTurn = currPlayer == Player::black ? "Black" : "White";
 		// draw current board state
 		updatePiecesFromBoard(game, previousMove);
 
 		std::pair<int, int> move;
-		if (game.getWhoseTurn() == Player::black) {
-			std::cout << "\nBLACK'S TURN!\n";
-			move = uctSearch(game, blackSims, blackC, false);
+		if (isHuman) {
+			move = getUserMove(game, s_showLegal);
+			std::cout << "User move: " << move.first << ", " << move.second << std::endl;
+			if (isPass(move)) std::cout << "PASS!" << std::endl;
 		}
 		else {
-			std::cout << "\nWHITE'S TURN!\n";
-			move = uctSearch(game, whiteSims, whiteC, false);
+			if (game.getWhoseTurn() == Player::black) {
+				std::cout << "\nBLACK'S TURN!\n";
+				move = uctSearch(game, blackSims, blackC, false);
+			}
+			else {
+				std::cout << "\nWHITE'S TURN!\n";
+				move = uctSearch(game, whiteSims, whiteC, false);
+			}
 		}
+
 		previousMove = move.first * 8 + move.second;
 		doMove(game, false, move.first, move.second);
 	}
@@ -216,15 +265,30 @@ void onMouseMoved(sf::Event::MouseMoveEvent mouseMove) {
 
 void onMousePressed(sf::Event::MouseButtonEvent mousePress) {
 	if (mousePress.button == sf::Mouse::Left) {
-		for (OthelloSF::Button& button : s_overlayUI) {
-			if (!button.isVisible()) continue;
+		if (s_boardState == BoardState::Playing && s_pickingMove) {
+			int idxOffset = s_pieces.size() - s_userLegalMoves.size();
 
-			sf::FloatRect bounds = button.getGlobalBounds();
+			// check for user selected legal move
+			for (int i = 0; i < s_userLegalMoves.size(); i++) {
+				sf::CircleShape tempPiece = s_pieces[idxOffset + i];
+				sf::FloatRect bounds = tempPiece.getGlobalBounds();
 
-			if (bounds.contains(mousePress.x, mousePress.y) && !button.isActive()) {
-				button.onPress([]() {
-					std::cout << "Button clicked!" << std::endl;
-				});
+				if (bounds.contains(mousePress.x, mousePress.y)) {
+					s_userSelectedMove = s_userLegalMoves[i];
+					s_pickingMove = false;
+					break;
+				}
+			}
+		}
+		else if (s_boardState == BoardState::Setup || s_boardState == BoardState::Paused) {
+			for (OthelloSF::Button& button : s_overlayUI) {
+				if (!button.isVisible()) continue;
+
+				sf::FloatRect bounds = button.getGlobalBounds();
+
+				if (bounds.contains(mousePress.x, mousePress.y) && !button.isActive()) {
+					button.onPress([]() {});
+				}
 			}
 		}
 	}
