@@ -18,6 +18,10 @@ std::vector<sf::RectangleShape> s_squares;
 std::vector<sf::CircleShape> s_pieces;
 std::vector<OthelloSF::Button> s_overlayUI;
 std::string s_whoseTurn;
+// B/W pair
+// false = CPU, true = human
+std::pair <bool, bool> s_players;
+bool s_pickingColor = false;
 
 enum class BoardState {
 	Setup,
@@ -48,12 +52,19 @@ void createBoardSquares() {
 
 // create drawable UI elements
 void createBoardUI() {
-	// s_overlayUI[0] = start
-	OthelloSF::Button startButton{ s_othelloFont, "Start" };
-	sf::FloatRect startBounds{ startButton.getGlobalBounds() };
-	startButton.setPosition(g_dimensions / 2 - startBounds.width / 2, g_dimensions / 2 - startBounds.height / 2);
+	auto createButton = [](const std::string& str, int x, int y, bool visible, sf::Color color = sf::Color::White) {
+		OthelloSF::Button btn{ s_othelloFont, str, color };
+		sf::FloatRect bounds{ btn.getGlobalBounds() };
+		btn.setPosition(x - bounds.width / 2, y - bounds.height / 2);
+		btn.setVisible(visible);
+		s_overlayUI.push_back(btn);
+	};
 
-	s_overlayUI.push_back(startButton);
+	createButton("Reset Game", g_dimensions / 2, g_dimensions / 2, false);
+	createButton("Human vs. CPU", g_dimensions / 2, g_dimensions / 2, true);
+	createButton("CPU vs. CPU", g_dimensions / 2, g_dimensions / 1.75f, true);
+	createButton("Black", g_dimensions / 1.8f, g_dimensions / 1.75f, false, sf::Color::Black);
+	createButton("White", g_dimensions / 1.5f, g_dimensions / 1.75f, false);
 }
 
 // create drawable for board posn
@@ -105,17 +116,22 @@ void renderBoard(sf::RenderWindow& window) {
 	sf::Text escKeyText;
 	setTextProperties(escKeyText, "ESC = Pause", 40);
 	escKeyText.setPosition(g_dimensions * 1.25f, escKeyText.getLocalBounds().height);
-	sf::Text overlayText;
-	overlayText.setPosition(g_dimensions / 2.0f, g_dimensions / 4.0f);
 	sf::Text moveText;
 	setTextProperties(moveText, s_whoseTurn + "'s Turn");
 	moveText.setPosition(g_dimensions * 1.25f, g_dimensions / 8.0f);
+	sf::Text overlayText;
+	overlayText.setPosition(g_dimensions / 2.0f, g_dimensions / 4.0f);
+	sf::Text pickColorText;
+	setTextProperties(pickColorText, "Pick color:", 35);
+	pickColorText.setPosition(g_dimensions / 2.5f, g_dimensions / 1.8f);
 
 	switch (s_boardState) {
 	case BoardState::Setup:
 		setTextProperties(overlayText, "Othello");
 		window.draw(s_overlay);
 		window.draw(overlayText);
+		if (s_pickingColor)
+			window.draw(pickColorText);
 		for (OthelloSF::Button button : s_overlayUI) window.draw(button);
 		break;
 	case BoardState::Playing:
@@ -147,7 +163,7 @@ void renderBoard(sf::RenderWindow& window) {
 	window.setActive(false);
 }
 
-void cpuTurn(Othello& game, int blackSims, float blackC, int whiteSims, float whiteC) {
+void gameLoop(Othello& game, int blackSims, float blackC, int whiteSims, float whiteC) {
 	int previousMove{};
 	// main loop
 	while (!isGameOver(game) && s_boardState != BoardState::Exit && s_boardState != BoardState::Resetting) {
@@ -215,41 +231,71 @@ void onMousePressed(sf::Event::MouseButtonEvent mousePress) {
 }
 
 void onMouseReleased(sf::Event::MouseButtonEvent mouseRelease, sf::RenderWindow& window, std::thread& gameThread, Othello& game) {
-	auto startNewGame = [&game, &gameThread](int bSims, float bC, int wSims, float wC) {
+	OthelloSF::Button& resetButton = s_overlayUI[0];
+	OthelloSF::Button& humanVsCPUBtn = s_overlayUI[1];
+	OthelloSF::Button& cpuVsCPUBtn = s_overlayUI[2];
+	OthelloSF::Button& pickBlackBtn = s_overlayUI[3];
+	OthelloSF::Button& pickWhiteBtn = s_overlayUI[4];
+
+	auto setPauseMenuUI = [&]() {
+		resetButton.setVisible(true);
+		humanVsCPUBtn.setVisible(false);
+		cpuVsCPUBtn.setVisible(false);
+		pickBlackBtn.setVisible(false);
+		pickWhiteBtn.setVisible(false);
+	};
+
+	auto startNewGame = [&game, &gameThread]() {
+		s_boardState = BoardState::Playing;
 		game = Othello{};
 		// start new game/logic thread
-		gameThread = std::thread{ cpuTurn, std::ref(game), bSims, bC, wSims, wC };
+		gameThread = std::thread{ gameLoop, std::ref(game), 1000, 2, 1000, 2 };
 	};
 
 	if (mouseRelease.button == sf::Mouse::Left) {
-		if (s_boardState == BoardState::Setup || s_boardState == BoardState::Paused) {
-			OthelloSF::Button& startButton = s_overlayUI[0];
+		if (humanVsCPUBtn.isActive()) {
+			humanVsCPUBtn.onRelease([&]() {
+				s_pickingColor = true;
 
-			if (startButton.isActive()) {
-				if (s_boardState == BoardState::Setup) {
-					startButton.onRelease([&startButton, &startNewGame]() {
-						s_boardState = BoardState::Playing;
+				sf::FloatRect bounds = cpuVsCPUBtn.getGlobalBounds();
+				cpuVsCPUBtn.setPosition(g_dimensions / 2 - bounds.width / 2, g_dimensions / 1.5f - bounds.height / 2);
+				pickBlackBtn.setVisible(true);
+				pickWhiteBtn.setVisible(true);
+			});
+		}
+		else if (pickBlackBtn.isActive()) {
+			pickBlackBtn.onRelease([&]() {
+				s_pickingColor = false;
+				s_players = { true, false };
+				setPauseMenuUI();
+				startNewGame();
+			});
+		}
+		else if (pickWhiteBtn.isActive()) {
+			pickWhiteBtn.onRelease([&]() {
+				s_pickingColor = false;
+				s_players = { false, true };
+				setPauseMenuUI();
+				startNewGame();
+			});
+		}
+		else if (cpuVsCPUBtn.isActive()) {
+			cpuVsCPUBtn.onRelease([&]() {
+				s_pickingColor = false;
+				s_players = { false, false };
+				setPauseMenuUI();
+				startNewGame();
+			});
+		}
+		else if (resetButton.isActive()) {
+			resetButton.onRelease([&]() {
+				s_boardState = BoardState::Resetting;
+				renderBoard(window);
+				if (gameThread.joinable())
+					gameThread.join();
 
-						// Start -> Reset button
-						startButton.setString("Reset Game");
-						sf::FloatRect startBounds{ startButton.getGlobalBounds() };
-						startButton.setPosition(g_dimensions / 2 - startBounds.width / 2, g_dimensions / 2 - startBounds.height / 2);
-
-						startNewGame(1000, 2, 1000, 2);
-					});
-				}
-				else if (s_boardState == BoardState::Paused) {
-					startButton.onRelease([&window, &gameThread, &game, &startNewGame]() {
-						s_boardState = BoardState::Resetting;
-						renderBoard(window);
-						if (gameThread.joinable())
-							gameThread.join();
-
-						s_boardState = BoardState::Playing;
-						startNewGame(1000, 2, 1000, 2);
-					});
-				}
-			}
+				startNewGame();
+			});
 		}
 	}
 }
